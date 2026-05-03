@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pack">
+<meta name="theme-color" content="#0C2C47">
+<title>Packing Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --linen:#FAEEE5;--coconut:#F0EDE5;--mauve:#D6C9C5;
+  --navy:#0C2C47;--yellow:#DA9B2B;--green:#2E5749;
+  --orange:#BF512C;--blue:#94B2C4;--cocoa:#594536;--red:#4E0000;
+  --packed-bg:#EAF2ED;--packed-border:#C5D9CE;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:'DM Sans',sans-serif;background:var(--linen);color:var(--navy);display:flex;flex-direction:column}
+
+/* ── SCREENS ── */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--linen);transition:transform 0.32s cubic-bezier(0.4,0,0.2,1);will-change:transform}
+.screen.hidden-right{transform:translateX(100%)}
+.screen.hidden-left{transform:translateX(-30%)}
+.screen.visible{transform:translateX(0)}
+
+/* ── SCROLLABLE BODY ── */
+.scroll-body{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.scroll-body::-webkit-scrollbar{display:none}
+
+/* ══════════════════ HOME ══════════════════ */
+.home-header{background:var(--navy);padding:52px 20px 20px;flex-shrink:0}
+.home-eyebrow{font-size:10px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--blue);opacity:.8;margin-bottom:5px}
+.home-title{font-family:'DM Serif Display',serif;font-size:28px;color:var(--linen);line-height:1.05;margin-bottom:16px}
+.home-ov{background:rgba(250,238,229,.06);border:1px solid rgba(214,201,197,.14);border-radius:10px;padding:11px 13px}
+.home-ov-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.home-ov-lbl{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(214,201,197,.45)}
+.home-ov-val{font-family:'Space Mono',monospace;font-size:11px;color:var(--yellow);font-weight:700}
+.home-ov-bar{height:2px;background:rgba(255,255,255,.08);border-radius:1px;overflow:hidden}
+.home-ov-fill{height:100%;background:var(--yellow);border-radius:1px;transition:width .4s}
+
+.home-body{padding:14px}
+
+.bag-card{border-radius:14px;padding:14px 15px;margin-bottom:10px;cursor:pointer;position:relative;overflow:hidden}
+.bag-card:active{opacity:.88}
+.bag-card.carry{background:var(--navy)}
+.bag-card.bag1{background:var(--green)}
+.bag-card.bag2{background:var(--orange)}
+
+.bag-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.bag-icon-wrap{width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.bag-info{flex:1;min-width:0}
+.bag-name{font-family:'DM Serif Display',serif;font-size:15px;color:rgba(250,238,229,.95)}
+.bag-meta{font-size:10px;color:rgba(250,238,229,.4);margin-top:2px;font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.bag-chevron{display:flex;align-items:center;opacity:.4;flex-shrink:0}
+.bag-bar{height:3px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden;margin-bottom:7px}
+.bag-bar-fill{height:100%;border-radius:2px;transition:width .35s}
+.bag-card.carry .bag-bar-fill{background:var(--yellow)}
+.bag-card.bag1 .bag-bar-fill,.bag-card.bag2 .bag-bar-fill{background:rgba(250,238,229,.55)}
+.bag-stats{display:flex;justify-content:space-between}
+.bag-stat{font-size:10px;color:rgba(250,238,229,.4);font-weight:500}
+.bag-stat b{color:rgba(250,238,229,.85);font-weight:700}
+
+/* ══════════════════ DETAIL ══════════════════ */
+.detail-header{padding:52px 18px 14px;flex-shrink:0}
+.detail-header.carry{background:var(--navy)}
+.detail-header.bag1{background:var(--green)}
+.detail-header.bag2{background:var(--orange)}
+.detail-back{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:rgba(250,238,229,.55);margin-bottom:8px;cursor:pointer;background:none;border:none;padding:0;font-family:'DM Sans',sans-serif}
+.detail-title{font-family:'DM Serif Display',serif;font-size:22px;color:var(--linen);line-height:1}
+.detail-meta{font-size:9px;color:rgba(250,238,229,.4);margin-top:3px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.detail-bar{height:3px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden;margin-top:10px}
+.detail-bar-fill{height:100%;background:rgba(250,238,229,.55);border-radius:2px;transition:width .35s}
+.detail-header.carry .detail-bar-fill{background:var(--yellow)}
+.detail-stats{display:flex;justify-content:space-between;margin-top:6px}
+.detail-stat{font-size:10px;color:rgba(250,238,229,.4);font-weight:600}
+.detail-stat b{color:rgba(250,238,229,.85)}
+
+/* weight card */
+.wt-card{margin:12px 14px 0;background:var(--coconut);border-radius:10px;border:1px solid var(--mauve);padding:10px 12px}
+.wt-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.wt-lbl{font-size:10px;color:var(--cocoa);opacity:.6;font-weight:500;display:flex;align-items:center;gap:5px}
+.wt-val{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--navy)}
+.wt-val.over{color:var(--orange)}
+.wt-bar{height:5px;background:var(--mauve);border-radius:3px;overflow:hidden}
+.wt-bar-fill{height:100%;border-radius:3px;transition:width .35s}
+.wt-bar-fill.ok{background:var(--green)}
+.wt-bar-fill.warn{background:var(--yellow)}
+.wt-bar-fill.over{background:var(--orange)}
+
+/* filter tabs */
+.filters{display:flex;background:var(--coconut);border-bottom:1px solid var(--mauve);flex-shrink:0;margin-top:10px}
+.filter-tab{flex:1;padding:9px 4px;text-align:center;font-size:11px;font-weight:600;color:var(--mauve);letter-spacing:.04em;border-bottom:2px solid transparent;cursor:pointer;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif;transition:color .15s}
+.filter-tab.active{color:var(--navy);border-bottom:2px solid var(--navy)}
+
+/* category */
+.cat-section{padding:0 14px;margin-top:12px}
+.cat-lbl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--cocoa);opacity:.45;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid var(--mauve);display:flex;justify-content:space-between}
+
+/* ── SWIPE ITEM ── */
+.swipe-wrap{position:relative;border-radius:10px;overflow:hidden;margin-bottom:4px;border:1px solid var(--mauve)}
+.swipe-actions{position:absolute;top:0;right:0;bottom:0;display:flex;z-index:1;transform:translateX(100%)}
+.swipe-edit{width:58px;background:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:9px;font-weight:700;color:rgba(250,238,229,.9);letter-spacing:.04em;cursor:pointer;flex-shrink:0}
+.swipe-del{width:58px;background:var(--red);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:9px;font-weight:700;color:rgba(255,255,255,.9);letter-spacing:.04em;cursor:pointer;flex-shrink:0}
+.swipe-row{display:flex;align-items:center;gap:10px;padding:11px 12px;background:var(--coconut);position:relative;z-index:2;transition:transform .26s cubic-bezier(0.25,0.46,0.45,0.94);cursor:pointer;min-height:46px}
+.swipe-row.packed{background:var(--packed-bg)}
+.swipe-wrap.open .swipe-row{transform:translateX(-116px)}
+.swipe-wrap.open .swipe-actions{transform:translateX(0)}
+.swipe-actions{transition:transform .26s cubic-bezier(0.25,0.46,0.45,0.94)}
+
+.item-check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--mauve);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;background:transparent}
+.item-check.done{background:var(--green);border-color:var(--green)}
+.item-name{font-size:13px;color:var(--navy);flex:1;line-height:1.3}
+.swipe-row.packed .item-name{color:var(--mauve);text-decoration:line-through;text-decoration-color:var(--mauve)}
+.item-wt{font-family:'Space Mono',monospace;font-size:9px;color:var(--mauve);flex-shrink:0}
+.swipe-row.packed .item-wt{color:var(--packed-border)}
+
+/* add button */
+.add-btn{display:flex;align-items:center;justify-content:center;gap:7px;border:1.5px dashed var(--mauve);border-radius:10px;padding:11px;margin:10px 14px 20px;font-size:12px;font-weight:600;color:var(--cocoa);opacity:.5;cursor:pointer;background:transparent}
+.add-btn:active{opacity:.8}
+
+/* ══════════════════ SHEETS ══════════════════ */
+.sheet-overlay{position:fixed;inset:0;background:rgba(12,44,71,.45);z-index:200;opacity:0;pointer-events:none;transition:opacity .22s}
+.sheet-overlay.show{opacity:1;pointer-events:all}
+.sheet{position:absolute;bottom:0;left:0;right:0;background:var(--coconut);border-radius:20px 20px 0 0;padding:0 0 34px;transform:translateY(100%);transition:transform .28s cubic-bezier(0.25,0.46,0.45,0.94)}
+.sheet-overlay.show .sheet{transform:translateY(0)}
+.sheet-handle{width:36px;height:4px;background:var(--mauve);border-radius:2px;margin:10px auto 16px}
+.sheet-title{font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);padding:0 20px 4px}
+.sheet-sub{font-size:12px;color:var(--cocoa);opacity:.55;padding:0 20px 18px}
+.sheet-field{padding:0 20px;margin-bottom:14px}
+.sheet-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--cocoa);opacity:.5;margin-bottom:6px}
+.sheet-input{width:100%;padding:11px 13px;border:1.5px solid var(--mauve);border-radius:10px;background:var(--linen);font-size:14px;font-family:'DM Sans',sans-serif;color:var(--navy);outline:none}
+.sheet-input:focus{border-color:var(--navy)}
+.sheet-select{width:100%;padding:11px 13px;border:1.5px solid var(--mauve);border-radius:10px;background:var(--linen);font-size:14px;font-family:'DM Sans',sans-serif;color:var(--navy);outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 7L11 1' stroke='%23594536' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center}
+.sheet-select:focus{border-color:var(--navy)}
+.sheet-btns{display:flex;gap:10px;padding:4px 20px 0}
+.sheet-cancel{flex:1;padding:13px;border:1.5px solid var(--mauve);border-radius:10px;background:transparent;font-size:14px;font-weight:600;color:var(--navy);font-family:'DM Sans',sans-serif;cursor:pointer}
+.sheet-confirm{flex:1;padding:13px;border:none;border-radius:10px;font-size:14px;font-weight:700;color:var(--linen);font-family:'DM Sans',sans-serif;cursor:pointer}
+.sheet-confirm.add-confirm{background:var(--green)}
+.sheet-confirm.edit-confirm{background:var(--navy)}
+.sheet-confirm.del-confirm{background:var(--red)}
+
+.del-sheet-icon{display:flex;justify-content:center;padding:16px 20px 12px}
+.del-item-name{font-size:14px;font-weight:600;color:var(--navy);padding:0 20px 4px;text-align:center}
+.del-item-sub{font-size:12px;color:var(--cocoa);opacity:.5;padding:0 20px 20px;text-align:center;line-height:1.5}
+
+.empty-state{text-align:center;padding:40px 20px;color:var(--mauve);font-size:13px}
+</style>
+</head>
+<body>
+
+<!-- ══ HOME SCREEN ══ -->
+<div class="screen visible" id="screen-home">
+  <div class="home-header">
+    <div class="home-eyebrow">Canada move · 2025</div>
+    <div class="home-title">Packing<br>tracker</div>
+    <div class="home-ov">
+      <div class="home-ov-row">
+        <span class="home-ov-lbl">Overall progress</span>
+        <span class="home-ov-val" id="ov-pct">0%</span>
+      </div>
+      <div class="home-ov-bar"><div class="home-ov-fill" id="ov-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+  <div class="scroll-body">
+    <div class="home-body">
+      <div class="bag-card carry" onclick="openBag('carry')">
+        <div class="bag-top">
+          <div class="bag-icon-wrap">
+            <svg width="32" height="32" viewBox="0 0 26 26" fill="none"><path d="M9 10C9 7 10.5 5.5 13 5.5C15.5 5.5 17 7 17 10" stroke="rgba(250,238,229,0.75)" stroke-width="1.5" stroke-linecap="round"/><rect x="5" y="10" width="16" height="11" rx="2.5" stroke="rgba(250,238,229,0.75)" stroke-width="1.5"/><path d="M9 15H17" stroke="rgba(250,238,229,0.35)" stroke-width="1.2" stroke-linecap="round"/></svg>
+          </div>
+          <div class="bag-info">
+            <div class="bag-name">Handbag — carry-on</div>
+            <div class="bag-meta">7 kg limit · always with you</div>
+          </div>
+          <div class="bag-chevron"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M5 3L11 8L5 13" stroke="rgba(250,238,229,0.6)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        </div>
+        <div class="bag-bar"><div class="bag-bar-fill" id="carry-bar" style="width:0%"></div></div>
+        <div class="bag-stats"><span class="bag-stat" id="carry-stat"><b>0</b> / 0 packed</span><span class="bag-stat" id="carry-wt">0.00 / 7 kg</span></div>
+      </div>
+      <div class="bag-card bag1" onclick="openBag('bag1')">
+        <div class="bag-top">
+          <div class="bag-icon-wrap">
+            <svg width="32" height="32" viewBox="0 0 26 26" fill="none"><path d="M10 8V6.5C10 5.7 10.7 5 11.5 5H14.5C15.3 5 16 5.7 16 6.5V8" stroke="rgba(250,238,229,0.75)" stroke-width="1.5" stroke-linecap="round"/><rect x="5" y="8" width="16" height="13" rx="2.5" stroke="rgba(250,238,229,0.75)" stroke-width="1.5"/><path d="M5 12H21" stroke="rgba(250,238,229,0.25)" stroke-width="1.2"/><path d="M5 17H21" stroke="rgba(250,238,229,0.25)" stroke-width="1.2"/><circle cx="13" cy="14.5" r="1.1" fill="rgba(250,238,229,0.45)"/></svg>
+          </div>
+          <div class="bag-info">
+            <div class="bag-name">Bag 1 — checked</div>
+            <div class="bag-meta">23 kg limit · clothes & grooming</div>
+          </div>
+          <div class="bag-chevron"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M5 3L11 8L5 13" stroke="rgba(250,238,229,0.6)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        </div>
+        <div class="bag-bar"><div class="bag-bar-fill" id="bag1-bar" style="width:0%"></div></div>
+        <div class="bag-stats"><span class="bag-stat" id="bag1-stat"><b>0</b> / 0 packed</span><span class="bag-stat" id="bag1-wt">0.00 / 23 kg</span></div>
+      </div>
+      <div class="bag-card bag2" onclick="openBag('bag2')">
+        <div class="bag-top">
+          <div class="bag-icon-wrap">
+            <svg width="32" height="32" viewBox="0 0 26 26" fill="none"><path d="M10 8V6.5C10 5.7 10.7 5 11.5 5H14.5C15.3 5 16 5.7 16 6.5V8" stroke="rgba(250,238,229,0.75)" stroke-width="1.5" stroke-linecap="round"/><rect x="5" y="8" width="16" height="13" rx="2.5" stroke="rgba(250,238,229,0.75)" stroke-width="1.5"/><path d="M5 12H21" stroke="rgba(250,238,229,0.25)" stroke-width="1.2"/><path d="M5 17H21" stroke="rgba(250,238,229,0.25)" stroke-width="1.2"/><circle cx="13" cy="14.5" r="1.1" fill="rgba(250,238,229,0.45)"/></svg>
+          </div>
+          <div class="bag-info">
+            <div class="bag-name">Bag 2 — checked</div>
+            <div class="bag-meta">23 kg limit · kitchen, docs & more</div>
+          </div>
+          <div class="bag-chevron"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M5 3L11 8L5 13" stroke="rgba(250,238,229,0.6)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        </div>
+        <div class="bag-bar"><div class="bag-bar-fill" id="bag2-bar" style="width:0%"></div></div>
+        <div class="bag-stats"><span class="bag-stat" id="bag2-stat"><b>0</b> / 0 packed</span><span class="bag-stat" id="bag2-wt">0.00 / 23 kg</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DETAIL SCREEN ══ -->
+<div class="screen hidden-right" id="screen-detail">
+  <div class="detail-header" id="detail-header">
+    <button class="detail-back" onclick="goHome()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 3L5 7L9 11" stroke="rgba(250,238,229,0.6)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      All bags
+    </button>
+    <div class="detail-title" id="detail-title"></div>
+    <div class="detail-meta" id="detail-meta"></div>
+    <div class="detail-bar"><div class="detail-bar-fill" id="detail-bar" style="width:0%"></div></div>
+    <div class="detail-stats">
+      <span class="detail-stat" id="detail-stat-items"></span>
+      <span class="detail-stat" id="detail-stat-wt"></span>
+    </div>
+  </div>
+  <div class="wt-card">
+    <div class="wt-row">
+      <span class="wt-lbl">
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><rect x="4" y="14" width="12" height="4" rx="2" stroke="var(--cocoa)" stroke-width="1.4" opacity=".5"/><path d="M10 14V10" stroke="var(--cocoa)" stroke-width="1.4" stroke-linecap="round" opacity=".5"/><path d="M5 10C5 7.2 7.2 5 10 5C12.8 5 15 7.2 15 10" stroke="var(--cocoa)" stroke-width="1.4" stroke-linecap="round" opacity=".5"/><path d="M8 10L9.8 8.5" stroke="var(--yellow)" stroke-width="1.4" stroke-linecap="round"/><circle cx="10" cy="10" r="1" fill="var(--cocoa)" opacity=".5"/></svg>
+        Weight packed
+      </span>
+      <span class="wt-val" id="wt-val">0.00 kg</span>
+    </div>
+    <div class="wt-bar"><div class="wt-bar-fill ok" id="wt-bar" style="width:0%"></div></div>
+  </div>
+  <div class="filters" id="filter-tabs">
+    <button class="filter-tab active" onclick="setFilter('all',this)">All</button>
+    <button class="filter-tab" onclick="setFilter('unpacked',this)">To pack</button>
+    <button class="filter-tab" onclick="setFilter('packed',this)">Packed</button>
+  </div>
+  <div class="scroll-body" id="detail-body"></div>
+</div>
+
+<!-- ══ ADD SHEET ══ -->
+<div class="sheet-overlay" id="add-overlay" onclick="closeSheet('add-overlay')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Add item</div>
+    <div class="sheet-sub" id="add-sheet-sub">Adding to Bag 1</div>
+    <div class="sheet-field">
+      <div class="sheet-label">Item name</div>
+      <input class="sheet-input" id="add-name" type="text" placeholder="e.g. Extra charger" autocomplete="off">
+    </div>
+    <div class="sheet-field">
+      <div class="sheet-label">Weight (kg)</div>
+      <input class="sheet-input" id="add-weight" type="number" placeholder="e.g. 0.20" step="0.01" min="0" inputmode="decimal">
+    </div>
+    <div class="sheet-btns">
+      <button class="sheet-cancel" onclick="closeSheet('add-overlay')">Cancel</button>
+      <button class="sheet-confirm add-confirm" onclick="confirmAdd()">Add item</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EDIT SHEET ══ -->
+<div class="sheet-overlay" id="edit-overlay" onclick="closeSheet('edit-overlay')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Edit item</div>
+    <div class="sheet-sub">Update name, weight or bag</div>
+    <div class="sheet-field">
+      <div class="sheet-label">Item name</div>
+      <input class="sheet-input" id="edit-name" type="text" autocomplete="off">
+    </div>
+    <div class="sheet-field">
+      <div class="sheet-label">Weight (kg)</div>
+      <input class="sheet-input" id="edit-weight" type="number" step="0.01" min="0" inputmode="decimal">
+    </div>
+    <div class="sheet-field">
+      <div class="sheet-label">Move to bag</div>
+      <select class="sheet-select" id="edit-bag">
+        <option value="carry">Handbag — carry-on</option>
+        <option value="bag1">Bag 1 — checked</option>
+        <option value="bag2">Bag 2 — checked</option>
+      </select>
+    </div>
+    <div class="sheet-btns">
+      <button class="sheet-cancel" onclick="closeSheet('edit-overlay')">Cancel</button>
+      <button class="sheet-confirm edit-confirm" onclick="confirmEdit()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DELETE SHEET ══ -->
+<div class="sheet-overlay" id="del-overlay" onclick="closeSheet('del-overlay')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div class="del-sheet-icon">
+      <svg width="40" height="40" viewBox="0 0 28 28" fill="none"><path d="M5 9H23" stroke="var(--red)" stroke-width="1.5" stroke-linecap="round"/><path d="M11 9V7C11 6.4 11.4 6 12 6H16C16.6 6 17 6.4 17 7V9" stroke="var(--red)" stroke-width="1.5" stroke-linecap="round"/><rect x="7.5" y="9" width="13" height="14" rx="2" stroke="var(--red)" stroke-width="1.5"/><path d="M12 12.5V19.5" stroke="var(--red)" stroke-width="1.4" stroke-linecap="round" opacity=".6"/><path d="M16 12.5V19.5" stroke="var(--red)" stroke-width="1.4" stroke-linecap="round" opacity=".6"/></svg>
+    </div>
+    <div class="del-item-name" id="del-item-name"></div>
+    <div class="del-item-sub">This item will be permanently removed.<br>This cannot be undone.</div>
+    <div class="sheet-btns">
+      <button class="sheet-cancel" onclick="closeSheet('del-overlay')">Keep it</button>
+      <button class="sheet-confirm del-confirm" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════
+const BAG_CONFIG = {
+  carry: { name:'Handbag — carry-on', meta:'7 KG LIMIT · ALWAYS WITH YOU', cls:'carry', limit:7 },
+  bag1:  { name:'Bag 1 — checked',    meta:'23 KG LIMIT · CLOTHES & GROOMING', cls:'bag1', limit:23 },
+  bag2:  { name:'Bag 2 — checked',    meta:'23 KG LIMIT · KITCHEN, DOCS & MORE', cls:'bag2', limit:23 },
+};
+
+const DEFAULT_DATA = {
+  carry:[
+    {cat:'Electronics & tech',items:[
+      {id:'c1',name:'20,000 mAh power bank',wt:0.45},
+      {id:'c2',name:'Laptop + charger',wt:2.20},
+      {id:'c3',name:'Phone adapter Type-C × 2',wt:0.10},
+      {id:'c4',name:'Type-C to Lightning cable × 2',wt:0.10},
+      {id:'c5',name:'Type-C to Type-C cable (long)',wt:0.10},
+      {id:'c6',name:'Universal travel adapter',wt:0.25},
+      {id:'c7',name:'Airpods',wt:0.06},
+      {id:'c8',name:'Hard drive',wt:0.15},
+      {id:'c9',name:'Pen drive',wt:0.02},
+      {id:'c10',name:'Phone gimbal',wt:0.30},
+      {id:'c11',name:'Camera + charger + lens protector',wt:0.80},
+      {id:'c12',name:'iPad + Apple Pencil',wt:0.55},
+      {id:'c13',name:'Garmin Watch + charging cable',wt:0.08},
+      {id:'c14',name:'Apple Watch + charging cable',wt:0.04},
+      {id:'c15',name:'USB hub',wt:0.10},
+    ]},
+    {cat:'Documents — keep on you',items:[
+      {id:'c16',name:'Active passport',wt:0.10},
+      {id:'c17',name:'Old passports',wt:0.20},
+      {id:'c18',name:'Passport photographs × 30',wt:0.05},
+      {id:'c19',name:"International driver's licence",wt:0.01},
+      {id:'c20',name:'Port of Entry Letter',wt:0.02},
+      {id:'c21',name:'PAL',wt:0.02},
+      {id:'c22',name:'Letter of Acceptance',wt:0.02},
+      {id:'c23',name:'Tuition fees receipt',wt:0.02},
+      {id:'c24',name:'GIC Certificate',wt:0.02},
+      {id:'c25',name:'Biometrics invoice',wt:0.01},
+      {id:'c26',name:'Medical exam invoice',wt:0.01},
+      {id:'c27',name:'Proof of funds docket',wt:0.03},
+      {id:'c28',name:'Travel insurance',wt:0.02},
+      {id:'c29',name:'Flight tickets',wt:0.01},
+      {id:'c30',name:'Steinbach accommodation proof',wt:0.02},
+      {id:'c31',name:'Regular meds prescription',wt:0.02},
+      {id:'c32',name:'Eye prescription',wt:0.01},
+    ]},
+    {cat:'Everyday valuables',items:[
+      {id:'c33',name:'Wallet',wt:0.12},
+      {id:'c34',name:'Document pouch',wt:0.15},
+    ]},
+  ],
+  bag1:[
+    {cat:'Eyewear & accessories',items:[
+      {id:'b1_1',name:'Sunglasses — metal frame + cover',wt:0.15},
+      {id:'b1_2',name:'Sunglasses — Ray-Ban + cover',wt:0.15},
+      {id:'b1_3',name:'CK eyewear + cover',wt:0.10},
+      {id:'b1_4',name:'Luggage scale',wt:0.30},
+      {id:'b1_5',name:'Swiss army knife',wt:0.10},
+    ]},
+    {cat:'Stationery',items:[
+      {id:'b1_6',name:'Mechanical pencil',wt:0.03},
+      {id:'b1_7',name:'Mechanical pencil lead',wt:0.01},
+      {id:'b1_8',name:'Small pen',wt:0.01},
+      {id:'b1_9',name:'Normal pen',wt:0.01},
+      {id:'b1_10',name:'Diary',wt:0.30},
+    ]},
+    {cat:'Grooming & toiletries',items:[
+      {id:'b1_11',name:'Toothbrush',wt:0.04},
+      {id:'b1_12',name:'Toothpaste',wt:0.15},
+      {id:'b1_13',name:'Tongue cleaner',wt:0.03},
+      {id:'b1_14',name:'Shampoo + conditioner',wt:0.60},
+      {id:'b1_15',name:'Body wash',wt:0.40},
+      {id:'b1_16',name:'Body oil',wt:0.30},
+      {id:'b1_17',name:'Face wash',wt:0.15},
+      {id:'b1_18',name:'Face cream',wt:0.10},
+      {id:'b1_19',name:'Deodorant',wt:0.15},
+      {id:'b1_20',name:'Hair serum',wt:0.15},
+      {id:'b1_21',name:'Night cream',wt:0.10},
+      {id:'b1_22',name:'YSL perfume',wt:0.30},
+      {id:'b1_23',name:'Hermes perfume',wt:0.30},
+      {id:'b1_24',name:'Sunscreen',wt:0.15},
+      {id:'b1_25',name:'Nail clipper',wt:0.05},
+      {id:'b1_26',name:'Nail filer',wt:0.02},
+      {id:'b1_27',name:'Portable jet spray',wt:0.20},
+      {id:'b1_28',name:'Comb',wt:0.05},
+      {id:'b1_29',name:'Towel',wt:0.35},
+      {id:'b1_30',name:'Trimmer',wt:0.35},
+      {id:'b1_31',name:'Razor',wt:0.08},
+      {id:'b1_32',name:'Razor foam',wt:0.25},
+      {id:'b1_33',name:'Nose scissors',wt:0.03},
+      {id:'b1_34',name:'Petroleum jelly',wt:0.10},
+      {id:'b1_35',name:'Lip balm',wt:0.03},
+      {id:'b1_36',name:'Ear buds',wt:0.03},
+      {id:'b1_37',name:'Hand sanitiser',wt:0.20},
+      {id:'b1_38',name:'Pimple patch',wt:0.02},
+    ]},
+    {cat:'Underwear & thermals',items:[
+      {id:'b1_39',name:'Underwear × 10',wt:0.50},
+      {id:'b1_40',name:'Thermal set × 2',wt:0.80},
+      {id:'b1_41',name:'Thick socks × 6 pairs',wt:0.60},
+    ]},
+    {cat:'T-shirts (round neck)',items:[
+      {id:'b1_42',name:'Dark gray plain',wt:0.20},{id:'b1_43',name:'Rust plain',wt:0.20},
+      {id:'b1_44',name:'Maroon plain',wt:0.20},{id:'b1_45',name:'Black plain',wt:0.20},
+      {id:'b1_46',name:'Brown plain',wt:0.20},{id:'b1_47',name:'White plain',wt:0.20},
+      {id:'b1_48',name:'Dark green plain',wt:0.20},{id:'b1_49',name:'F1 McLaren black (printed)',wt:0.20},
+      {id:'b1_50',name:'Gray Uniqlo',wt:0.20},{id:'b1_51',name:'Gray Calvin Klein',wt:0.20},
+      {id:'b1_52',name:'LBWK black',wt:0.20},{id:'b1_53',name:'Uniqlo red',wt:0.20},
+      {id:'b1_54',name:'Uniqlo green',wt:0.20},{id:'b1_55',name:'Under Armour black',wt:0.20},
+    ]},
+    {cat:'T-shirts (collar / polo)',items:[
+      {id:'b1_56',name:'Navy blue',wt:0.25},{id:'b1_57',name:'Light gray',wt:0.25},{id:'b1_58',name:'Teal CK',wt:0.25},
+    ]},
+    {cat:'Shirts',items:[
+      {id:'b1_59',name:'Navy blue plain',wt:0.30},{id:'b1_60',name:'White plain',wt:0.30},
+      {id:'b1_61',name:'Black plain',wt:0.30},{id:'b1_62',name:'Red checks',wt:0.30},
+      {id:'b1_63',name:'Rust plain',wt:0.30},{id:'b1_64',name:'Maroon overshirt',wt:0.35},
+      {id:'b1_65',name:'Beige overshirt',wt:0.35},
+    ]},
+    {cat:'Sweatshirts & jackets',items:[
+      {id:'b1_66',name:'Maroon sweatshirt',wt:0.55},{id:'b1_67',name:'Beige sweatshirt',wt:0.55},
+      {id:'b1_68',name:'Brown sweatshirt',wt:0.55},{id:'b1_69',name:'Rust sweatshirt',wt:0.55},
+      {id:'b1_70',name:'Blue stripes sweatshirt',wt:0.55},{id:'b1_71',name:'Gray zipper',wt:0.60},
+      {id:'b1_72',name:'Brown jacket',wt:0.80},
+    ]},
+    {cat:'Jeans & pants',items:[
+      {id:'b1_73',name:'Beige jeans',wt:0.70},{id:'b1_74',name:'Blue jeans',wt:0.70},
+      {id:'b1_75',name:'Khaki Snitch chino',wt:0.50},{id:'b1_76',name:'Beige Tommy Bahama chino',wt:0.50},
+      {id:'b1_77',name:'Dark gray chino',wt:0.50},{id:'b1_78',name:'Black jeans',wt:0.70},
+    ]},
+  ],
+  bag2:[
+    {cat:'Eyewear — extras',items:[
+      {id:'b2_1',name:'Tom Ford eyewear',wt:0.10},{id:'b2_2',name:'Coco Leni eyewear + cover',wt:0.10},
+      {id:'b2_3',name:'Running sunglasses',wt:0.08},{id:'b2_4',name:'Casio watch',wt:0.07},
+      {id:'b2_5',name:'Fossil watch',wt:0.10},{id:'b2_6',name:'Anti-fog spray',wt:0.08},
+    ]},
+    {cat:'Documents — originals file',items:[
+      {id:'b2_7',name:'Documents file folder (A4)',wt:0.30},{id:'b2_8',name:'10th marksheet',wt:0.05},
+      {id:'b2_9',name:'12th marksheet',wt:0.05},{id:'b2_10',name:'B.Arch degree',wt:0.05},
+      {id:'b2_11',name:'Transcript',wt:0.05},{id:'b2_12',name:'Baptism certificate',wt:0.03},
+      {id:'b2_13',name:'First Communion certificate',wt:0.03},{id:'b2_14',name:'Confirmation certificate',wt:0.03},
+      {id:'b2_15',name:'Birth certificate',wt:0.03},{id:'b2_16',name:'Hair treatment prescription',wt:0.01},
+    ]},
+    {cat:'Stationery',items:[
+      {id:'b2_17',name:'Clear folders',wt:0.10},
+    ]},
+    {cat:'Medicines & vitamins',items:[
+      {id:'b2_18',name:'Antacid',wt:0.10},{id:'b2_19',name:'Pain killers',wt:0.10},
+      {id:'b2_20',name:'Band-aid',wt:0.05},{id:'b2_21',name:'Cold & flu meds',wt:0.10},
+      {id:'b2_22',name:'Nasal spray',wt:0.08},{id:'b2_23',name:'Multi vitamins',wt:0.20},
+      {id:'b2_24',name:'Vitamin D3',wt:0.10},{id:'b2_25',name:'Vitamin B12',wt:0.10},
+      {id:'b2_26',name:'Cetirizine',wt:0.05},
+    ]},
+    {cat:'Kitchen & cookware',items:[
+      {id:'b2_27',name:'Cooker + spare whistle & gasket',wt:1.50},{id:'b2_28',name:'Non-stick pan (medium)',wt:0.80},
+      {id:'b2_29',name:'Non-stick pan (small)',wt:0.50},{id:'b2_30',name:'Tea / milk pan',wt:0.40},
+      {id:'b2_31',name:'Frother machine + attachments',wt:0.50},{id:'b2_32',name:'Tea filter / garni',wt:0.05},
+      {id:'b2_33',name:'Plastic chamcha + ladle',wt:0.15},{id:'b2_34',name:'Tongs / sansi',wt:0.15},
+      {id:'b2_35',name:'Masala organiser',wt:0.30},{id:'b2_36',name:'Columbia mug',wt:0.40},
+      {id:'b2_37',name:'Kathmandu water bottle',wt:0.35},
+    ]},
+    {cat:'Masalas & food',items:[
+      {id:'b2_38',name:'Chai masala & chai patti',wt:0.30},{id:'b2_39',name:'Oregano & chilli flakes',wt:0.10},
+      {id:'b2_40',name:'Hing, ajwain, kalonji',wt:0.15},{id:'b2_41',name:'Kashmiri red chilli powder',wt:0.20},
+      {id:'b2_42',name:'Ready-to-eat meals + noodles',wt:1.50},{id:'b2_43',name:'Instant khichdi mix',wt:0.50},
+    ]},
+  ],
+};
+
+// ══════════════════════════════════════════════
+// STATE — all loaded from / saved to localStorage
+// ══════════════════════════════════════════════
+let bags   = {};   // {carry:[{cat,items:[{id,name,wt}]}], ...}
+let packed = {};   // {id: true}
+let currentBag = 'bag1';
+let currentFilter = 'all';
+let activeSwipe = null;
+let pendingEdit = null;
+let pendingDel  = null;
+let nextCustomId = 1000;
+
+function save() {
+  // synchronous — no lag
+  localStorage.setItem('pack_bags',   JSON.stringify(bags));
+  localStorage.setItem('pack_packed', JSON.stringify(packed));
+  localStorage.setItem('pack_cid',    String(nextCustomId));
+}
+
+function load() {
+  try {
+    const b = localStorage.getItem('pack_bags');
+    const p = localStorage.getItem('pack_packed');
+    const c = localStorage.getItem('pack_cid');
+    bags   = b ? JSON.parse(b) : JSON.parse(JSON.stringify(DEFAULT_DATA));
+    packed = p ? JSON.parse(p) : {};
+    nextCustomId = c ? parseInt(c) : 1000;
+  } catch(e) {
+    bags   = JSON.parse(JSON.stringify(DEFAULT_DATA));
+    packed = {};
+    nextCustomId = 1000;
+  }
+}
+
+// ══════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════
+function allItems(bagKey) {
+  return bags[bagKey].flatMap(c => c.items);
+}
+function packedItems(bagKey) {
+  return allItems(bagKey).filter(i => packed[i.id]);
+}
+function packedWeight(bagKey) {
+  return packedItems(bagKey).reduce((s,i) => s + i.wt, 0);
+}
+function totalWeight(bagKey) {
+  return allItems(bagKey).reduce((s,i) => s + i.wt, 0);
+}
+
+// ══════════════════════════════════════════════
+// HOME UPDATES
+// ══════════════════════════════════════════════
+function updateHome() {
+  let totalAll = 0, packedAll = 0;
+  ['carry','bag1','bag2'].forEach(b => {
+    const items = allItems(b);
+    const p = packedItems(b).length;
+    const t = items.length;
+    const pw = packedWeight(b);
+    const limit = BAG_CONFIG[b].limit;
+    totalAll += t; packedAll += p;
+    const pct = t ? Math.round(p/t*100) : 0;
+    document.getElementById(b+'-bar').style.width = pct+'%';
+    document.getElementById(b+'-stat').innerHTML = `<b>${p}</b> / ${t} packed`;
+    const wtEl = document.getElementById(b+'-wt');
+    wtEl.textContent = pw.toFixed(2)+' / '+limit+' kg';
+    wtEl.style.color = pw > limit ? 'rgba(250,238,229,1)' : '';
+  });
+  const pct = totalAll ? Math.round(packedAll/totalAll*100) : 0;
+  document.getElementById('ov-pct').textContent = pct+'%';
+  document.getElementById('ov-bar').style.width = pct+'%';
+}
+
+// ══════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════
+function openBag(bagKey) {
+  currentBag = bagKey;
+  currentFilter = 'all';
+  const cfg = BAG_CONFIG[bagKey];
+  const hdr = document.getElementById('detail-header');
+  hdr.className = 'detail-header '+cfg.cls;
+  document.getElementById('detail-title').textContent = cfg.name;
+  document.getElementById('detail-meta').textContent  = cfg.meta;
+  document.querySelectorAll('.filter-tab').forEach((t,i) => t.classList.toggle('active', i===0));
+  renderDetail();
+  document.getElementById('screen-home').classList.replace('visible','hidden-left');
+  document.getElementById('screen-detail').classList.replace('hidden-right','visible');
+  document.getElementById('screen-detail').querySelector('.scroll-body').scrollTop = 0;
+}
+
+function goHome() {
+  closeActiveSwipe();
+  document.getElementById('screen-detail').classList.replace('visible','hidden-right');
+  document.getElementById('screen-home').classList.replace('hidden-left','visible');
+  updateHome();
+}
+
+// ══════════════════════════════════════════════
+// RENDER DETAIL
+// ══════════════════════════════════════════════
+function renderDetail() {
+  const bagKey = currentBag;
+  const cfg    = BAG_CONFIG[bagKey];
+  const pw     = packedWeight(bagKey);
+  const limit  = cfg.limit;
+  const items  = allItems(bagKey);
+  const p      = packedItems(bagKey).length;
+  const pct    = items.length ? Math.round(p/items.length*100) : 0;
+  const wpct   = Math.min(100, Math.round(pw/limit*100));
+
+  document.getElementById('detail-bar').style.width  = pct+'%';
+  document.getElementById('detail-stat-items').innerHTML = `<b>${p}</b> / ${items.length} packed`;
+  document.getElementById('detail-stat-wt').innerHTML    = `<b>${pw.toFixed(2)}</b> / ${limit} kg`;
+
+  const wtVal  = document.getElementById('wt-val');
+  const wtBar  = document.getElementById('wt-bar');
+  wtVal.textContent = pw.toFixed(2)+' / '+limit+' kg';
+  wtVal.className   = 'wt-val'+(pw>limit?' over':'');
+  wtBar.style.width = wpct+'%';
+  wtBar.className   = 'wt-bar-fill '+(pw>limit?'over':wpct>80?'warn':'ok');
+
+  const body = document.getElementById('detail-body');
+  body.innerHTML = '';
+  let anyVisible = false;
+
+  bags[bagKey].forEach(catObj => {
+    const filtered = catObj.items.filter(item => {
+      if (currentFilter === 'packed')   return !!packed[item.id];
+      if (currentFilter === 'unpacked') return !packed[item.id];
+      return true;
+    });
+    if (!filtered.length) return;
+    anyVisible = true;
+
+    const pkInCat = catObj.items.filter(i => packed[i.id]).length;
+    const sec = document.createElement('div');
+    sec.className = 'cat-section';
+    sec.innerHTML = `<div class="cat-lbl"><span>${catObj.cat}</span><span>${pkInCat}/${catObj.items.length}</span></div>`;
+    body.appendChild(sec);
+
+    filtered.forEach(item => {
+      const isPacked = !!packed[item.id];
+      const wrap = document.createElement('div');
+      wrap.className = 'swipe-wrap';
+      wrap.dataset.id = item.id;
+
+      wrap.innerHTML = `
+        <div class="swipe-actions">
+          <div class="swipe-edit" data-id="${item.id}">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9.5 2.5L11.5 4.5L5 11L2.5 11.5L3 9Z" stroke="rgba(250,238,229,0.9)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.5 3.5L10.5 5.5" stroke="rgba(250,238,229,0.9)" stroke-width="1.3" stroke-linecap="round"/></svg>
+            Edit
+          </div>
+          <div class="swipe-del" data-id="${item.id}">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 4.5H11.5" stroke="rgba(255,255,255,0.9)" stroke-width="1.3" stroke-linecap="round"/><path d="M5 4.5V3C5 2.4 5.4 2 6 2H8C8.6 2 9 2.4 9 3V4.5" stroke="rgba(255,255,255,0.9)" stroke-width="1.3" stroke-linecap="round"/><rect x="4" y="4.5" width="6" height="7.5" rx="1.2" stroke="rgba(255,255,255,0.9)" stroke-width="1.3"/><path d="M6 6.5V10" stroke="rgba(255,255,255,0.65)" stroke-width="1.2" stroke-linecap="round"/><path d="M8 6.5V10" stroke="rgba(255,255,255,0.65)" stroke-width="1.2" stroke-linecap="round"/></svg>
+            Delete
+          </div>
+        </div>
+        <div class="swipe-row ${isPacked?'packed':''}" data-id="${item.id}">
+          <div class="item-check ${isPacked?'done':''}">
+            ${isPacked?`<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`:''}
+          </div>
+          <div class="item-name">${item.name}</div>
+          <div class="item-wt">${item.wt.toFixed(2)}</div>
+        </div>`;
+
+      // tap row = toggle packed
+      wrap.querySelector('.swipe-row').addEventListener('click', () => {
+        if (wrap.classList.contains('open')) { closeActiveSwipe(); return; }
+        togglePacked(item.id);
+      });
+
+      // edit button
+      wrap.querySelector('.swipe-edit').addEventListener('click', e => {
+        e.stopPropagation();
+        openEdit(item.id);
+      });
+
+      // delete button
+      wrap.querySelector('.swipe-del').addEventListener('click', e => {
+        e.stopPropagation();
+        openDelete(item.id, item.name);
+      });
+
+      initSwipe(wrap);
+      sec.appendChild(wrap);
+    });
+  });
+
+  if (!anyVisible) {
+    body.innerHTML = '<div class="empty-state">Nothing here</div>';
+  }
+
+  // add item button
+  const addBtn = document.createElement('div');
+  addBtn.className = 'add-btn';
+  addBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2V12" stroke="var(--cocoa)" stroke-width="1.6" stroke-linecap="round" opacity=".5"/><path d="M2 7H12" stroke="var(--cocoa)" stroke-width="1.6" stroke-linecap="round" opacity=".5"/></svg> Add item to this bag`;
+  addBtn.addEventListener('click', openAdd);
+  body.appendChild(addBtn);
+}
+
+// ══════════════════════════════════════════════
+// TOGGLE PACKED — instant, no lag
+// ══════════════════════════════════════════════
+function togglePacked(id) {
+  // 1. flip state
+  packed[id] = !packed[id];
+  // 2. save synchronously
+  save();
+  // 3. update just the one row (no full re-render)
+  const wrap = document.querySelector(`.swipe-wrap[data-id="${id}"]`);
+  if (wrap) {
+    const row   = wrap.querySelector('.swipe-row');
+    const check = wrap.querySelector('.item-check');
+    const name  = wrap.querySelector('.item-name');
+    const isPacked = !!packed[id];
+    row.classList.toggle('packed', isPacked);
+    check.classList.toggle('done', isPacked);
+    check.innerHTML = isPacked
+      ? `<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+      : '';
+    name.classList.toggle('packed', isPacked);  // strikethrough via CSS on .swipe-row.packed .item-name
+    // apply strikethrough directly so we don't need parent class selector
+    name.style.textDecoration = isPacked ? 'line-through' : 'none';
+    name.style.color = isPacked ? 'var(--mauve)' : 'var(--navy)';
+  }
+  // 4. update header stats + weight bar (fast DOM ops only)
+  updateDetailStats();
+}
+
+function updateDetailStats() {
+  const bagKey = currentBag;
+  const cfg    = BAG_CONFIG[bagKey];
+  const pw     = packedWeight(bagKey);
+  const limit  = cfg.limit;
+  const items  = allItems(bagKey);
+  const p      = packedItems(bagKey).length;
+  const pct    = items.length ? Math.round(p/items.length*100) : 0;
+  const wpct   = Math.min(100, Math.round(pw/limit*100));
+
+  document.getElementById('detail-bar').style.width  = pct+'%';
+  document.getElementById('detail-stat-items').innerHTML = `<b>${p}</b> / ${items.length} packed`;
+  document.getElementById('detail-stat-wt').innerHTML    = `<b>${pw.toFixed(2)}</b> / ${limit} kg`;
+
+  const wtVal = document.getElementById('wt-val');
+  const wtBar = document.getElementById('wt-bar');
+  wtVal.textContent = pw.toFixed(2)+' / '+limit+' kg';
+  wtVal.className   = 'wt-val'+(pw>limit?' over':'');
+  wtBar.style.width = wpct+'%';
+  wtBar.className   = 'wt-bar-fill '+(pw>limit?'over':wpct>80?'warn':'ok');
+}
+
+// ══════════════════════════════════════════════
+// SWIPE GESTURE
+// ══════════════════════════════════════════════
+const ACTION_W = 116;
+
+function closeActiveSwipe() {
+  if (activeSwipe) {
+    activeSwipe.classList.remove('open');
+    activeSwipe = null;
+  }
+}
+
+function initSwipe(wrap) {
+  const row = wrap.querySelector('.swipe-row');
+  let startX=0, startY=0, curX=0, dragging=false, moved=false;
+
+  function onStart(e) {
+    if (wrap.classList.contains('open')) return;
+    const pt = e.touches ? e.touches[0] : e;
+    startX = pt.clientX; startY = pt.clientY;
+    dragging = true; moved = false; curX = 0;
+    row.style.transition = 'none';
+    wrap.querySelector('.swipe-actions').style.transition = 'none';
+  }
+  function onMove(e) {
+    if (!dragging) return;
+    const pt = e.touches ? e.touches[0] : e;
+    const dx = pt.clientX - startX;
+    const dy = pt.clientY - startY;
+    if (!moved && Math.abs(dy) > Math.abs(dx)) { dragging=false; return; }
+    if (dx > 2) { dragging=false; return; }
+    if (dx < 0) { moved=true; e.preventDefault(); }
+    curX = Math.max(-ACTION_W, dx);
+    row.style.transform = `translateX(${curX}px)`;
+    const pct = Math.max(0, 100 + (curX/ACTION_W)*100);
+    wrap.querySelector('.swipe-actions').style.transform = `translateX(${pct}%)`;
+  }
+  function onEnd() {
+    if (!dragging) return;
+    dragging = false;
+    row.style.transition = '';
+    wrap.querySelector('.swipe-actions').style.transition = '';
+    if (curX < -ACTION_W*0.38) {
+      if (activeSwipe && activeSwipe !== wrap) closeActiveSwipe();
+      wrap.classList.add('open');
+      activeSwipe = wrap;
+    } else {
+      row.style.transform = '';
+      wrap.querySelector('.swipe-actions').style.transform = '';
+    }
+    curX = 0;
+  }
+
+  row.addEventListener('touchstart', onStart, {passive:true});
+  row.addEventListener('touchmove',  onMove,  {passive:false});
+  row.addEventListener('touchend',   onEnd);
+  row.addEventListener('mousedown',  onStart);
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup',   onEnd);
+}
+
+// close swipe on tap outside
+document.addEventListener('touchstart', e => {
+  if (activeSwipe && !activeSwipe.contains(e.target)) closeActiveSwipe();
+}, {passive:true});
+
+// ══════════════════════════════════════════════
+// FILTER
+// ══════════════════════════════════════════════
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  closeActiveSwipe();
+  renderDetail();
+}
+
+// ══════════════════════════════════════════════
+// ADD ITEM
+// ══════════════════════════════════════════════
+function openAdd() {
+  document.getElementById('add-sheet-sub').textContent = 'Adding to '+BAG_CONFIG[currentBag].name;
+  document.getElementById('add-name').value   = '';
+  document.getElementById('add-weight').value = '';
+  document.getElementById('add-overlay').classList.add('show');
+  setTimeout(() => document.getElementById('add-name').focus(), 300);
+}
+
+function confirmAdd() {
+  const name = document.getElementById('add-name').value.trim();
+  const wt   = parseFloat(document.getElementById('add-weight').value) || 0;
+  if (!name) { document.getElementById('add-name').focus(); return; }
+
+  const id = 'custom_'+(nextCustomId++);
+  const item = {id, name, wt};
+
+  // find or create Custom items category
+  let customCat = bags[currentBag].find(c => c.cat === 'Custom items');
+  if (!customCat) { customCat = {cat:'Custom items', items:[]}; bags[currentBag].push(customCat); }
+  customCat.items.push(item);
+
+  save();
+  closeSheet('add-overlay');
+  renderDetail();
+}
+
+// ══════════════════════════════════════════════
+// EDIT ITEM
+// ══════════════════════════════════════════════
+function findItem(id) {
+  for (const bagKey of ['carry','bag1','bag2']) {
+    for (const cat of bags[bagKey]) {
+      const item = cat.items.find(i => i.id === id);
+      if (item) return {bagKey, cat, item};
+    }
+  }
+  return null;
+}
+
+function openEdit(id) {
+  closeActiveSwipe();
+  const found = findItem(id);
+  if (!found) return;
+  pendingEdit = id;
+  document.getElementById('edit-name').value   = found.item.name;
+  document.getElementById('edit-weight').value = found.item.wt;
+  document.getElementById('edit-bag').value    = found.bagKey;
+  document.getElementById('edit-overlay').classList.add('show');
+}
+
+function confirmEdit() {
+  if (!pendingEdit) return;
+  const name    = document.getElementById('edit-name').value.trim();
+  const wt      = parseFloat(document.getElementById('edit-weight').value) || 0;
+  const newBag  = document.getElementById('edit-bag').value;
+  if (!name) { document.getElementById('edit-name').focus(); return; }
+
+  const found = findItem(pendingEdit);
+  if (!found) { closeSheet('edit-overlay'); return; }
+
+  found.item.name = name;
+  found.item.wt   = wt;
+
+  if (newBag !== found.bagKey) {
+    // remove from current bag
+    found.cat.items = found.cat.items.filter(i => i.id !== pendingEdit);
+    // add to new bag custom cat
+    let customCat = bags[newBag].find(c => c.cat === 'Custom items');
+    if (!customCat) { customCat = {cat:'Custom items',items:[]}; bags[newBag].push(customCat); }
+    customCat.items.push(found.item);
+  }
+
+  save();
+  closeSheet('edit-overlay');
+  renderDetail();
+}
+
+// ══════════════════════════════════════════════
+// DELETE ITEM
+// ══════════════════════════════════════════════
+function openDelete(id, name) {
+  closeActiveSwipe();
+  pendingDel = id;
+  document.getElementById('del-item-name').textContent = '"'+name+'"';
+  document.getElementById('del-overlay').classList.add('show');
+}
+
+function confirmDelete() {
+  if (!pendingDel) return;
+  const found = findItem(pendingDel);
+  if (found) {
+    found.cat.items = found.cat.items.filter(i => i.id !== pendingDel);
+    delete packed[pendingDel];
+  }
+  save();
+  closeSheet('del-overlay');
+  pendingDel = null;
+  renderDetail();
+}
+
+// ══════════════════════════════════════════════
+// SHEET UTILS
+// ══════════════════════════════════════════════
+function closeSheet(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+load();
+updateHome();
+</script>
+</body>
+</html>
